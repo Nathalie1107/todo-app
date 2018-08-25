@@ -247,9 +247,68 @@ describe('POST /users', () => {
     
     request(app)
       .post('/users')
-      .send({email, password})
+      .send({ email, password})
       .expect(400)
       .end(done);
 
+  })
+})
+
+describe('POST /users/login', () => {
+  it('should login and return auth token', done => {
+    
+    request(app)
+      .post('/users/login')
+      .send({ 
+        email: users[0].email,
+        password: users[0].password})
+      .expect(200)
+      .expect(res => {
+        expect(res.headers['x-auth']).toExist();
+
+      }).end((err, res) => {
+        if(err)
+        {return done(err)};
+
+
+        User.findById(users[0]._id).then(user => {
+        });
+        User.findById(users[0]._id).then(user => {
+          expect(user.tokens[1]).toInclude({
+            access:'auth',
+            token:res.headers['x-auth']
+          })
+          done();
+        }).catch(e => done(e));
+      })
+  })
+
+  it('should reject invalid login', done => {
+    request(app)
+    .post('/users/login')
+    .send({ 
+      email: 'excellence@test.com',
+      password: users[0].password})
+    .expect(400)
+    .end(done);
+    
+  })
+})
+
+describe('DELETE /users/logout', () => {
+  it('should delete the token', done => {
+    request(app)
+      .delete('/users/me/token')
+      .set('x-auth', users[0].tokens[0].token)
+      .expect(200)
+      .end((err, res) => {
+        if(err){
+          return done(err)
+        } 
+        User.findById(users[0]._id).then(user => {
+          expect(user.tokens.length).toBe(0);
+          done();
+        }).catch(e => done(e));
+      })
   })
 })
